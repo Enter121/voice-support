@@ -174,4 +174,4 @@ actions:
     action: music_assistant.play_media
     data: "{{ dict(action_data.items() | selectattr('1')) }}"
     target:
-      entity
+      entity_id: "{{ mass_player_entity_id }}"
