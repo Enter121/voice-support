@@ -1,7 +1,7 @@
 blueprint:
   domain: automation
   name: Music Assistant – voice support (PL)
-  source_url: https://github.com/Enter121/voice-support/new/main/local-assist-blueprint/mass_assist_blueprint_pl.yaml
+  source_url: https://github.com/Enter121/voice-support/blob/main/local-assist-blueprint/mass_assist_blueprint_pl.yaml
   description: >
     ![Image](https://github.com/music-assistant/voice-support/blob/main/assets/music-assistant.png?raw=true)
   
@@ -51,7 +51,9 @@ blueprint:
     Shuffle songs by Muse.
     Shuffle the album Classical Nights on the Bedroom Sonos Speaker
     ```
+
 input:
+  # Wymagane — domyślny odtwarzacz
   default_player_entity_id_input:
     name: Domyślny odtwarzacz
     selector:
@@ -61,62 +63,62 @@ input:
             domain: media_player
         multiple: false
 
-trigger_response_settings:
-  name: Ustawienia wyzwalacza i reakcji
-  icon: mdi:chat
-  description: >
-    Możesz zmienić istniejące wyzwalacze lub dodać nowe. Wstaw tekst w nawiasach kwadratowych `[ ]`, by uczynić go opcjonalnym.
-    Użyj nawiasów okrągłych `( )` z separatorem `|`, by wprowadzić wiele wariantów (traktowanych jako "lub"). `{ query }` to symbol wieloznaczny, który zawiera żądane multimedia, opcjonalnie obszar lub odtwarzacz Music Assistant.
-    Możesz też określić odpowiedzi, które Assist będzie udzielać.
-    Schemat wykorzystuje szablony Jinja, które zostaną zastąpione danymi o mediach i nazwą odtwarzacza Music Assistant.
-  collapsed: true
+  # Wyzwalacze — album
+  album_trigger:
+    name: Wyzwalacz dla albumu
+    description: Zdania wyzwalające dla konkretnego albumu
+    selector:
+      text:
+        multiline: false
+        multiple: true
+    default:
+      - "(shuffle|play|listen to) [the ](album|ep|record|compilation|single) {media_name} [by [the ](artist|band|group) {artist}] [(in|on|using) [the ]{area_or_player_name}][ (with|using) {radio_mode}]"
 
-  input:
-    album_trigger:
-      name: Wyzwalacz dla albumu
-      description: Zdania wyzwalające dla konkretnego albumu
-      selector:
-        text:
-          multiline: false
-          multiple: true
-      default:
-        - "(shuffle|play|listen to) [the ](album|ep|record|compilation|single) {media_name} [by [the ](artist|band|group) {artist}] [(in|on|using) [the ]{area_or_player_name}][ (with|using) {radio_mode}]"
-    track_trigger:
-      name: Wyzwalacz dla utworu
-      description: Zdania wyzwalające dla konkretnego utworu
-      selector:
-        text:
-          multiline: false
-          multiple: true
-      default:
-        - "(shuffle|play|listen to) [the ](track|song) {media_name} [by [the ](artist|band|group) {artist}] [(in|on|using) [the ]{area_or_player_name}][ (with|using) {radio_mode}]"
-    artist_trigger:
-      name: Wyzwalacz dla artysty
-      description: Zdania wyzwalające dla konkretnego artysty
-      selector:
-        text:
-          multiline: false
-          multiple: true
-      default:
-        - "(shuffle|play|listen to) [the ](artist|band|group) {media_name} [(in|on|using) [the ]{area_or_player_name}][ (with|using) {radio_mode}]"
-    radio_trigger:
-      name: Wyzwalacz dla radia
-      description: Zdania wyzwalające dla stacji radiowej
-      selector:
-        text:
-          multiline: false
-          multiple: true
-      default:
-        - "(shuffle|play|listen to) [the ]((radio station)|(radio)|(station)) {media_name} [(in|on|using) [the ]{area_or_player_name}]"
-    playlist_trigger:
-      name: Wyzwalacz dla playlisty
-      description: Zdania wyzwalające dla playlisty
-      selector:
-        text:
-          multiline: false
-          multiple: true
-      default:
-        - "(shuffle|play|listen to) [the ]playlist {media_name} [(in|on|using) [the ]{area_or_player_name}][ (with|using) {radio_mode}]"
+  # Wyzwalacze — utwór
+  track_trigger:
+    name: Wyzwalacz dla utworu
+    description: Zdania wyzwalające dla konkretnego utworu
+    selector:
+      text:
+        multiline: false
+        multiple: true
+    default:
+      - "(shuffle|play|listen to) [the ](track|song) {media_name} [by [the ](artist|band|group) {artist}] [(in|on|using) [the ]{area_or_player_name}][ (with|using) {radio_mode}]"
+
+  # Wyzwalacze — artysta
+  artist_trigger:
+    name: Wyzwalacz dla artysty
+    description: Zdania wyzwalające dla konkretnego artysty
+    selector:
+      text:
+        multiline: false
+        multiple: true
+    default:
+      - "(shuffle|play|listen to) [the ](artist|band|group) {media_name} [(in|on|using) [the ]{area_or_player_name}][ (with|using) {radio_mode}]"
+
+  # Wyzwalacze — radio
+  radio_trigger:
+    name: Wyzwalacz dla radia
+    description: Zdania wyzwalające dla stacji radiowej
+    selector:
+      text:
+        multiline: false
+        multiple: true
+    default:
+      - "(shuffle|play|listen to) [the ]((radio station)|(radio)|(station)) {media_name} [(in|on|using) [the ]{area_or_player_name}]"
+
+  # Wyzwalacze — playlisty
+  playlist_trigger:
+    name: Wyzwalacz dla playlisty
+    description: Zdania wyzwalające dla playlisty
+    selector:
+      text:
+        multiline: false
+        multiple: true
+    default:
+      - "(shuffle|play|listen to) [the ]playlist {media_name} [(in|on|using) [the ]{area_or_player_name}][ (with|using) {radio_mode}]"
+
+  # Odpowiedź Assist
   response_input:
     name: Odpowiedź Assist
     description: Odpowiedź, jaką wyświetli Assist
@@ -172,13 +174,4 @@ actions:
     action: music_assistant.play_media
     data: "{{ dict(action_data.items() | selectattr('1')) }}"
     target:
-      entity_id: "{{ mass_player_entity_id }}"
-  - alias: Włącz/wyłącz losowe odtwarzanie
-    action: media_player.shuffle_set
-    data:
-      shuffle: "{{ shuffle }}"
-    target:
-      entity_id: "{{ mass_player_entity_id }}"
-  - alias: Zwrot odpowiedzi poprzez Assist
-    set_conversation_response: !input response_input
-    mode: single
+      entity
