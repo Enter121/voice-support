@@ -1,0 +1,184 @@
+blueprint:
+  domain: automation
+  name: Music Assistant – wsparcie głosowe lokalne
+  source_url: https://github.com/music-assistant/voice-support/blob/main/local-assist-blueprint/mass_assist_blueprint_en.yaml
+  description: >
+    ![Image](https://github.com/music-assistant/voice-support/blob/main/assets/music-assistant.png?raw=true)
+  
+    # Odtwarzaj multimedia za pomocą poleceń głosowych
+
+    ### Konfiguracja blueprinta
+    #### Wymagane
+    * Ustaw `Default Player` (domyślny odtwarzacz), gdy nie podano nazwy urządzenia i gdy żądanie nie pochodzi z obszaru z odtwarzaczem Music Assistant.
+
+    #### Opcjonalne
+    * Zmień zdanie wyzwalające (trigger sentence) lub dodaj własne, możesz też przetłumaczyć je na swój język.
+    * Zmień odpowiedzi lub przetłumacz je na swój język.
+
+    ### Użytkowanie
+    Wszystkie zdania muszą:
+    * zaczynać się od słów `Shuffle`, `Play` lub `Listen to`, a następnie typu elementu `artist`/`track`/`album`/`playlist`/`radio` oraz nazwy elementu.
+
+    Jeśli zdanie zaczyna się od `Shuffle`, odtwarzacz ustawia opcję losowego odtwarzania, w przeciwnym razie jest ona wyłączona.
+
+    * dla `album` i `track` – opcjonalnie mogą być zakończone zwrotem `by [the] artist`, po czym następuje nazwa artysty
+    * opcjonalnie mogą zawierać nazwę obszaru (area) lub urządzenia
+    * a dla `artist`, `track`, `album` lub `playlist` opcjonalnie mogą być zakończone frazą `using radio mode`
+
+    #### Dozwolone warianty
+    Użycie rodzajnika `the` jest opcjonalne:
+
+    | Typ mediów | Dozwolone warianty          |
+    |------------|-----------------------------|
+    | `artist`   | `band`, `group`             |
+    | `track`    | `song`                      |
+    | `radio`    | `radio station`, `radio`    |
+    | `playlist` | (brak dodatkowych wariantów) |
+
+    #### Przykłady
+    ```
+    Play the artist Pink Floyd in the kitchen
+    Listen to album Jagged Little Pill in the study
+    Listen to the album Greatest Hits by the artist James Taylor in the kitchen
+    Play track New Years Day in the bedroom
+    Play track New Years Day in the bedroom using radio mode
+    Play the song A Hard Days Night by Billy Joel in the bedroom
+    Listen to the playlist Classic Rock in the study
+    Listen to the radio station BBC Radio 1 in the bedroom
+    Play the album Classical Nights on the Bedroom Sonos Speaker
+    Listen to the record Classical Nights on the Bedroom Sonos Speaker
+    Play the band U2
+    Shuffle songs by Muse.
+    Shuffle the album Classical Nights on the Bedroom Sonos Speaker
+    ```
+input:
+  default_player_entity_id_input:
+    name: Domyślny odtwarzacz
+    selector:
+      entity:
+        filter:
+          - integration: music_assistant
+            domain: media_player
+        multiple: false
+
+trigger_response_settings:
+  name: Ustawienia wyzwalacza i reakcji
+  icon: mdi:chat
+  description: >
+    Możesz zmienić istniejące wyzwalacze lub dodać nowe. Wstaw tekst w nawiasach kwadratowych `[ ]`, by uczynić go opcjonalnym.
+    Użyj nawiasów okrągłych `( )` z separatorem `|`, by wprowadzić wiele wariantów (traktowanych jako "lub"). `{ query }` to symbol wieloznaczny, który zawiera żądane multimedia, opcjonalnie obszar lub odtwarzacz Music Assistant.
+    Możesz też określić odpowiedzi, które Assist będzie udzielać.
+    Schemat wykorzystuje szablony Jinja, które zostaną zastąpione danymi o mediach i nazwą odtwarzacza Music Assistant.
+  collapsed: true
+
+  input:
+    album_trigger:
+      name: Wyzwalacz dla albumu
+      description: Zdania wyzwalające dla konkretnego albumu
+      selector:
+        text:
+          multiline: false
+          multiple: true
+      default:
+        - "(shuffle|play|listen to) [the ](album|ep|record|compilation|single) {media_name} [by [the ](artist|band|group) {artist}] [(in|on|using) [the ]{area_or_player_name}][ (with|using) {radio_mode}]"
+    track_trigger:
+      name: Wyzwalacz dla utworu
+      description: Zdania wyzwalające dla konkretnego utworu
+      selector:
+        text:
+          multiline: false
+          multiple: true
+      default:
+        - "(shuffle|play|listen to) [the ](track|song) {media_name} [by [the ](artist|band|group) {artist}] [(in|on|using) [the ]{area_or_player_name}][ (with|using) {radio_mode}]"
+    artist_trigger:
+      name: Wyzwalacz dla artysty
+      description: Zdania wyzwalające dla konkretnego artysty
+      selector:
+        text:
+          multiline: false
+          multiple: true
+      default:
+        - "(shuffle|play|listen to) [the ](artist|band|group) {media_name} [(in|on|using) [the ]{area_or_player_name}][ (with|using) {radio_mode}]"
+    radio_trigger:
+      name: Wyzwalacz dla radia
+      description: Zdania wyzwalające dla stacji radiowej
+      selector:
+        text:
+          multiline: false
+          multiple: true
+      default:
+        - "(shuffle|play|listen to) [the ]((radio station)|(radio)|(station)) {media_name} [(in|on|using) [the ]{area_or_player_name}]"
+    playlist_trigger:
+      name: Wyzwalacz dla playlisty
+      description: Zdania wyzwalające dla playlisty
+      selector:
+        text:
+          multiline: false
+          multiple: true
+      default:
+        - "(shuffle|play|listen to) [the ]playlist {media_name} [(in|on|using) [the ]{area_or_player_name}][ (with|using) {radio_mode}]"
+  response_input:
+    name: Odpowiedź Assist
+    description: Odpowiedź, jaką wyświetli Assist
+    selector:
+      text:
+        multiline: false
+        multiple: false
+    default: "{{ 'Shuffling' if 'shuffle' in trigger.sentence | lower else '' }} {{ trigger.slots.media_name }} {{ '' if 'shuffle' in trigger.sentence | lower else 'playing' }} on {{ mass_player_name }}"
+
+triggers:
+  - trigger:
+      conversation:
+        command: !input album_trigger
+    id: album
+  - trigger:
+      conversation:
+        command: !input track_trigger
+    id: track
+  - trigger:
+      conversation:
+        command: !input artist_trigger
+    id: artist
+  - trigger:
+      conversation:
+        command: !input radio_trigger
+    id: radio
+  - trigger:
+      conversation:
+        command: !input playlist_trigger
+    id: playlist
+
+actions:
+  - alias: Definiuj zmienne dla automatyzacji
+    variables:
+      version: 20250404
+      shuffle: "{{ 'shuffle' in trigger.sentence | lower }}"
+      default_player_entity_id: !input default_player_entity_id_input
+      trigger_id: "{{ trigger.id }}"
+      area_or_player_name: "{{ trigger.slots.area_or_player_name | default }}"
+      assist_device_id: "{{ trigger.device_id }}"
+      action_data:
+        media_id: "{{ trigger.slots.media_name }}"
+        media_type: "{{ 'radio' if 'radio' in media_name | lower else trigger_id }}"
+        artist: "{{ trigger.slots.artist | default }}"
+        radio_mode: "{{ 'radio' in trigger.slots.radio_mode | default | lower }}"
+      ma_players: "{{ integration_entities('music_assistant') | select('match', 'media_player') | list }}"
+      player_entity_id_by_player_name: "{{ ma_players | expand | selectattr('name', 'match', area_or_player_name ~ '$', ignorecase=true) | map(attribute='entity_id') | list }}"
+      player_entity_id_by_area_name: "{{ areas() | map('area_name') | select('match', area_or_player_name ~ '$', ignorecase=true) | map('area_entities') | sum(start=[]) | select('in', ma_players) | list }}"
+      player_entity_id_by_assist_area: "{{ area_entities(area_id(trigger.device_id)) | select('in', ma_players) | list }}"
+      mass_player_entity_id: "{{ player_entity_id_by_player_name or player_entity_id_by_area_name or player_entity_id_by_assist_area or [default_player_entity_id] }}"
+      mass_player_name: "{{ mass_player_entity_id | map('state_attr', 'friendly_name') | join('', '') }}"
+  - alias: Wyślij multimedia do wybranego odtwarzacza Music Assistant
+    action: music_assistant.play_media
+    data: "{{ dict(action_data.items() | selectattr('1')) }}"
+    target:
+      entity_id: "{{ mass_player_entity_id }}"
+  - alias: Włącz/wyłącz losowe odtwarzanie
+    action: media_player.shuffle_set
+    data:
+      shuffle: "{{ shuffle }}"
+    target:
+      entity_id: "{{ mass_player_entity_id }}"
+  - alias: Zwrot odpowiedzi poprzez Assist
+    set_conversation_response: !input response_input
+    mode: single
